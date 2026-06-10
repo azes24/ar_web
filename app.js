@@ -6,6 +6,7 @@
 
 // ─── State ───
 let arActive = false;
+let sceneInjected = false;
 let markersFound = { hiro: false, kanji: false };
 
 // ─── Elements ───
@@ -44,12 +45,22 @@ async function startAR() {
   arActive = true;
 
   // Setup marker events after scene loads
-  const scene = document.getElementById('ar-scene');
-  if (scene.hasLoaded) {
-    setupMarkerEvents();
-  } else {
-    scene.addEventListener('loaded', setupMarkerEvents);
+  if (!sceneInjected) {
+    const template = document.getElementById('ar-template');
+    document.getElementById('scene-wrapper').appendChild(template.content.cloneNode(true));
+    sceneInjected = true;
   }
+
+  setTimeout(() => {
+    const scene = document.getElementById('ar-scene');
+    if (scene) {
+      if (scene.hasLoaded) {
+        setupMarkerEvents();
+      } else {
+        scene.addEventListener('loaded', setupMarkerEvents);
+      }
+    }
+  }, 500);
 }
 
 // ════════════════════════════════
@@ -118,13 +129,16 @@ function exitAR() {
   arContainer.classList.add('hidden');
 
   // Reload scene to stop camera (clean approach)
-  const scene = document.getElementById('ar-scene');
-  if (scene) {
+  const wrapper = document.getElementById('scene-wrapper');
+  if (wrapper) {
     // Stop all video tracks
     const videos = document.querySelectorAll('video');
     videos.forEach(v => {
       if (v.srcObject) v.srcObject.getTracks().forEach(t => t.stop());
+      v.remove();
     });
+    wrapper.innerHTML = '';
+    sceneInjected = false;
   }
 
   // Show splash
